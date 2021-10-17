@@ -130,7 +130,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<dynamic> ShowCapturedWidget(
-      BuildContext context, Uint8List capturedImage) {
+      BuildContext context, Uint8List? capturedImage) {
     return showDialog(
       useSafeArea: false,
       context: context,

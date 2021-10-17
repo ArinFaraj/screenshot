@@ -2,13 +2,17 @@ library screenshot;
 
 // import 'dart:io';
 import 'dart:async';
-import 'dart:developer';
+import 'dart:isolate';
 import 'dart:typed_data';
-import 'src/platform_specific/file_manager/file_manager.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
-// import 'package:path_provider/path_provider.dart';
+import 'package:image/image.dart' as imagePkg;
+
+import 'src/platform_specific/file_manager/file_manager.dart';
+
+//import 'package:path_provider/path_provider.dart';
 import 'dart:ui' as ui;
 
 ///
@@ -18,13 +22,13 @@ import 'dart:ui' as ui;
 ///
 class ScreenshotController {
   late GlobalKey _containerKey;
+
   ScreenshotController() {
     _containerKey = GlobalKey();
   }
 
   /// Captures image and saves to given path
-  Future<String?> captureAndSave(
-    String directory, {
+  Future<String?> captureAndSave(String directory, {
     String? fileName,
     double? pixelRatio,
     Duration delay = const Duration(milliseconds: 20),
@@ -50,33 +54,42 @@ class ScreenshotController {
           pixelRatio: pixelRatio,
         );
         ByteData? byteData =
-            await image?.toByteData(format: ui.ImageByteFormat.png);
-        Uint8List? pngBytes = byteData?.buffer.asUint8List();
+        await image?.toByteData(format: ui.ImageByteFormat.rawRgba);
 
-        return pngBytes;
+        var receivePort = ReceivePort();
+
+        await Isolate.spawn(
+            decodeIsolate,
+            DecodeParam(byteData!, image!.width.toInt(), image.height.toInt(),
+                receivePort.sendPort));
+
+        var imagwe = await receivePort.first as Uint8List;
+
+        return imagwe;
       } catch (Exception) {
         throw (Exception);
       }
     });
   }
 
-  Future<ui.Image?> captureAsUiImage(
-      {double? pixelRatio: 1,
-      Duration delay: const Duration(milliseconds: 20)}) {
+  Future<ui.Image?> captureAsUiImage({double? pixelRatio: 1,
+    Duration delay: const Duration(milliseconds: 20)}) {
     //Delay is required. See Issue https://github.com/flutter/flutter/issues/22308
     return new Future.delayed(delay, () async {
       try {
         var findRenderObject =
-            this._containerKey.currentContext?.findRenderObject();
+        this._containerKey.currentContext?.findRenderObject();
         if (findRenderObject == null) {
           return null;
         }
         RenderRepaintBoundary boundary =
-            findRenderObject as RenderRepaintBoundary;
+        findRenderObject as RenderRepaintBoundary;
         BuildContext? context = _containerKey.currentContext;
         if (pixelRatio == null) {
           if (context != null)
-            pixelRatio = pixelRatio ?? MediaQuery.of(context).devicePixelRatio;
+            pixelRatio = pixelRatio ?? MediaQuery
+                .of(context)
+                .devicePixelRatio;
         }
         ui.Image image = await boundary.toImage(pixelRatio: pixelRatio ?? 1);
         return image;
@@ -93,8 +106,7 @@ class ScreenshotController {
   ///
   ///
   ///
-  Future<Uint8List> captureFromWidget(
-    Widget widget, {
+  Future<Uint8List> captureFromWidget(Widget widget, {
     Duration delay: const Duration(seconds: 1),
     double? pixelRatio,
     BuildContext? context,
@@ -150,12 +162,12 @@ class ScreenshotController {
     renderView.prepareInitialFrame();
 
     final RenderObjectToWidgetElement<RenderBox> rootElement =
-        RenderObjectToWidgetAdapter<RenderBox>(
-            container: repaintBoundary,
-            child: Directionality(
-              textDirection: TextDirection.ltr,
-              child: child,
-            )).attachToRenderTree(
+    RenderObjectToWidgetAdapter<RenderBox>(
+        container: repaintBoundary,
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: child,
+        )).attachToRenderTree(
       buildOwner,
     );
     ////
@@ -163,7 +175,9 @@ class ScreenshotController {
     ///
     ///
 
-    buildOwner.buildScope(rootElement,);
+    buildOwner.buildScope(
+      rootElement,
+    );
     buildOwner.finalizeTree();
 
     pipelineOwner.flushLayout();
@@ -178,6 +192,7 @@ class ScreenshotController {
       ///
       ///
       isDirty = false;
+
 
       image = await repaintBoundary.toImage(
           pixelRatio: pixelRatio ?? (imageSize.width / logicalSize.width));
@@ -214,15 +229,49 @@ class ScreenshotController {
     } while (isDirty && retryCounter >= 0);
 
     final ByteData? byteData =
-        await image.toByteData(format: ui.ImageByteFormat.png);
+    await image.toByteData(format: ui.ImageByteFormat.rawRgba);
 
-    return byteData!.buffer.asUint8List();
+    var receivePort = ReceivePort();
+
+    await Isolate.spawn(
+        decodeIsolate,
+        DecodeParam(byteData!, image.width.toInt(), image.height.toInt(),
+            receivePort.sendPort));
+
+    var imagwe = await receivePort.first as Uint8List;
+
+    return imagwe;
   }
+}
+
+class DecodeParam {
+  final ByteData file;
+  final int width;
+  final int height;
+  final SendPort sendPort;
+
+  DecodeParam(this.file,
+      this.width,
+      this.height,
+      this.sendPort,);
+}
+
+void decodeIsolate(DecodeParam param) {
+  // Read an image from file (webp in this case).
+  // decodeImage will identify the format of the image and use the appropriate
+  // decoder.
+  final imagee = imagePkg.Image.fromBytes(param.width.toInt(),
+      param.height.toInt(), param.file.buffer.asUint8List(),
+      format: imagePkg.Format.rgba);
+  // Resize the image to a 120x? thumbnail (maintaining the aspect ratio).
+  Uint8List thumbnail = imagePkg.encodeJpg(imagee, quality: 100) as Uint8List;
+  param.sendPort.send(thumbnail);
 }
 
 class Screenshot<T> extends StatefulWidget {
   final Widget? child;
   final ScreenshotController controller;
+
   const Screenshot({
     Key? key,
     required this.child,

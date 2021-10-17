@@ -5,8 +5,11 @@
 .pub/
 .idea/
 .vscode/
-
+.idea/
 build/
 ios/.generated/
 ios/Flutter/Generated.xcconfig
 ios/Runner/GeneratedPluginRegistrant.*
+example/windows/flutter/generated_plugin_registrant.cc
+.gitignore
+example/windows/flutter/generated_plugins.cmake
