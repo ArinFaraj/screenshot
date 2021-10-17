@@ -28,7 +28,8 @@ class ScreenshotController {
   }
 
   /// Captures image and saves to given path
-  Future<String?> captureAndSave(String directory, {
+  Future<String?> captureAndSave(
+    String directory, {
     String? fileName,
     double? pixelRatio,
     Duration delay = const Duration(milliseconds: 20),
@@ -54,7 +55,7 @@ class ScreenshotController {
           pixelRatio: pixelRatio,
         );
         ByteData? byteData =
-        await image?.toByteData(format: ui.ImageByteFormat.rawRgba);
+            await image?.toByteData(format: ui.ImageByteFormat.rawRgba);
 
         var receivePort = ReceivePort();
 
@@ -72,24 +73,23 @@ class ScreenshotController {
     });
   }
 
-  Future<ui.Image?> captureAsUiImage({double? pixelRatio: 1,
-    Duration delay: const Duration(milliseconds: 20)}) {
+  Future<ui.Image?> captureAsUiImage(
+      {double? pixelRatio: 1,
+      Duration delay: const Duration(milliseconds: 20)}) {
     //Delay is required. See Issue https://github.com/flutter/flutter/issues/22308
     return new Future.delayed(delay, () async {
       try {
         var findRenderObject =
-        this._containerKey.currentContext?.findRenderObject();
+            this._containerKey.currentContext?.findRenderObject();
         if (findRenderObject == null) {
           return null;
         }
         RenderRepaintBoundary boundary =
-        findRenderObject as RenderRepaintBoundary;
+            findRenderObject as RenderRepaintBoundary;
         BuildContext? context = _containerKey.currentContext;
         if (pixelRatio == null) {
           if (context != null)
-            pixelRatio = pixelRatio ?? MediaQuery
-                .of(context)
-                .devicePixelRatio;
+            pixelRatio = pixelRatio ?? MediaQuery.of(context).devicePixelRatio;
         }
         ui.Image image = await boundary.toImage(pixelRatio: pixelRatio ?? 1);
         return image;
@@ -106,10 +106,40 @@ class ScreenshotController {
   ///
   ///
   ///
-  Future<Uint8List> captureFromWidget(Widget widget, {
+  Future<Uint8List> captureFromWidget(
+    Widget widget, {
     Duration delay: const Duration(seconds: 1),
     double? pixelRatio,
     BuildContext? context,
+    Size? targetSize,
+  }) async {
+    ui.Image image = await widgetToUiImage(widget,
+        delay: delay,
+        pixelRatio: pixelRatio,
+        context: context,
+        targetSize: targetSize);
+    // converts to jpg format
+    final ByteData? byteData =
+        await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+
+    var receivePort = ReceivePort();
+
+    await Isolate.spawn(
+        decodeIsolate,
+        DecodeParam(byteData!, image.width.toInt(), image.height.toInt(),
+            receivePort.sendPort));
+
+    var imagwe = await receivePort.first as Uint8List;
+
+    return imagwe;
+  }
+
+  static Future<ui.Image> widgetToUiImage(
+    Widget widget, {
+    Duration delay: const Duration(seconds: 1),
+    double? pixelRatio,
+    BuildContext? context,
+    Size? targetSize,
   }) async {
     ///
     ///Retry counter
@@ -126,17 +156,24 @@ class ScreenshotController {
       ///
       child = InheritedTheme.captureAll(
         context,
-        MediaQuery(data: MediaQuery.of(context), child: child),
+        MediaQuery(
+            data: MediaQuery.of(context),
+            child: Material(
+              child: child,
+              color: Colors.transparent,
+            )),
       );
     }
 
     final RenderRepaintBoundary repaintBoundary = RenderRepaintBoundary();
 
-    Size logicalSize = ui.window.physicalSize / ui.window.devicePixelRatio;
-    Size imageSize = ui.window.physicalSize;
+    Size logicalSize = targetSize ??
+        ui.window.physicalSize / ui.window.devicePixelRatio; // Adapted
+    Size imageSize = targetSize ?? ui.window.physicalSize; // Adapted
 
-    assert(logicalSize.aspectRatio.toPrecision(5) ==
-        imageSize.aspectRatio.toPrecision(5));
+    assert(logicalSize.aspectRatio.toStringAsPrecision(5) ==
+        imageSize.aspectRatio
+            .toStringAsPrecision(5)); // Adapted (toPrecision was not available)
 
     final RenderView renderView = RenderView(
       window: ui.window,
@@ -162,12 +199,12 @@ class ScreenshotController {
     renderView.prepareInitialFrame();
 
     final RenderObjectToWidgetElement<RenderBox> rootElement =
-    RenderObjectToWidgetAdapter<RenderBox>(
-        container: repaintBoundary,
-        child: Directionality(
-          textDirection: TextDirection.ltr,
-          child: child,
-        )).attachToRenderTree(
+        RenderObjectToWidgetAdapter<RenderBox>(
+            container: repaintBoundary,
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: child,
+            )).attachToRenderTree(
       buildOwner,
     );
     ////
@@ -193,12 +230,11 @@ class ScreenshotController {
       ///
       isDirty = false;
 
-
       image = await repaintBoundary.toImage(
           pixelRatio: pixelRatio ?? (imageSize.width / logicalSize.width));
 
       ///
-      ///This delay shoud inceases with Widget tree Size
+      ///This delay sholud increas with Widget tree Size
       ///
 
       await Future.delayed(delay);
@@ -228,19 +264,7 @@ class ScreenshotController {
 
     } while (isDirty && retryCounter >= 0);
 
-    final ByteData? byteData =
-    await image.toByteData(format: ui.ImageByteFormat.rawRgba);
-
-    var receivePort = ReceivePort();
-
-    await Isolate.spawn(
-        decodeIsolate,
-        DecodeParam(byteData!, image.width.toInt(), image.height.toInt(),
-            receivePort.sendPort));
-
-    var imagwe = await receivePort.first as Uint8List;
-
-    return imagwe;
+    return image;
   }
 }
 
@@ -250,10 +274,12 @@ class DecodeParam {
   final int height;
   final SendPort sendPort;
 
-  DecodeParam(this.file,
-      this.width,
-      this.height,
-      this.sendPort,);
+  DecodeParam(
+    this.file,
+    this.width,
+    this.height,
+    this.sendPort,
+  );
 }
 
 void decodeIsolate(DecodeParam param) {
