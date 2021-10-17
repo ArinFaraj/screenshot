@@ -61,7 +61,7 @@ class ScreenshotController {
 
         await Isolate.spawn(
             decodeIsolate,
-            DecodeParam(byteData!, image!.width.toInt(), image.height.toInt(),
+            DecodeParam(byteData!, image!.width.floor(), image.height.floor(),
                 receivePort.sendPort));
 
         var imagwe = await receivePort.first as Uint8List;
@@ -126,7 +126,7 @@ class ScreenshotController {
 
     await Isolate.spawn(
         decodeIsolate,
-        DecodeParam(byteData!, image.width.toInt(), image.height.toInt(),
+        DecodeParam(byteData!, image.width.floor(), image.height.floor(),
             receivePort.sendPort));
 
     var imagwe = await receivePort.first as Uint8List;
@@ -286,9 +286,12 @@ void decodeIsolate(DecodeParam param) {
   // Read an image from file (webp in this case).
   // decodeImage will identify the format of the image and use the appropriate
   // decoder.
-  final imagee = imagePkg.Image.fromBytes(param.width.toInt(),
-      param.height.toInt(), param.file.buffer.asUint8List(),
-      format: imagePkg.Format.rgba);
+  final imagee = imagePkg.Image.fromBytes(
+    param.width.floor(),
+    param.height.floor(),
+    param.file.buffer.asUint8List(),
+    format: imagePkg.Format.rgba,
+  );
   // Resize the image to a 120x? thumbnail (maintaining the aspect ratio).
   Uint8List thumbnail = imagePkg.encodeJpg(imagee, quality: 100) as Uint8List;
   param.sendPort.send(thumbnail);
