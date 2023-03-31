@@ -287,6 +287,8 @@ void decodeIsolate(DecodeParam param) {
     width: param.width.floor(),
     height: param.height.floor(),
     bytes: param.file.buffer,
+    numChannels: 4,
+    order: imagePkg.ChannelOrder.rgba,
   );
   // Resize the image to a 120x? thumbnail (maintaining the aspect ratio).
   Uint8List thumbnail = imagePkg.encodeJpg(imagee, quality: 100);
