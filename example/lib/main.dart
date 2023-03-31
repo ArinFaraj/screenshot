@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Demo',
       theme: ThemeData(
         textTheme: TextTheme(
-            headline6: TextStyle(
+            titleLarge: TextStyle(
           color: Colors.yellow,
           fontSize: 50,
         )),
@@ -111,7 +111,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                     child: Text(
                       "This is an invisible widget",
-                      style: Theme.of(context).textTheme.headline6,
+                      style: Theme.of(context).textTheme.titleLarge,
                     ));
                 screenshotController
                     .captureFromWidget(

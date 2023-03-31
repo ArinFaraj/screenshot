@@ -4,16 +4,14 @@ library screenshot;
 import 'dart:async';
 import 'dart:isolate';
 import 'dart:typed_data';
+//import 'package:path_provider/path_provider.dart';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart';
 import 'package:image/image.dart' as imagePkg;
 
 import 'src/platform_specific/file_manager/file_manager.dart';
-
-//import 'package:path_provider/path_provider.dart';
-import 'dart:ui' as ui;
 
 ///
 ///
@@ -74,8 +72,8 @@ class ScreenshotController {
   }
 
   Future<ui.Image?> captureAsUiImage(
-      {double? pixelRatio: 1,
-      Duration delay: const Duration(milliseconds: 20)}) {
+      {double? pixelRatio = 1,
+      Duration delay = const Duration(milliseconds: 20)}) {
     //Delay is required. See Issue https://github.com/flutter/flutter/issues/22308
     return new Future.delayed(delay, () async {
       try {
@@ -108,7 +106,7 @@ class ScreenshotController {
   ///
   Future<Uint8List> captureFromWidget(
     Widget widget, {
-    Duration delay: const Duration(seconds: 1),
+    Duration delay = const Duration(seconds: 1),
     double? pixelRatio,
     BuildContext? context,
     Size? targetSize,
@@ -136,7 +134,7 @@ class ScreenshotController {
 
   static Future<ui.Image> widgetToUiImage(
     Widget widget, {
-    Duration delay: const Duration(seconds: 1),
+    Duration delay = const Duration(seconds: 1),
     double? pixelRatio,
     BuildContext? context,
     Size? targetSize,
@@ -261,7 +259,6 @@ class ScreenshotController {
       ///
       ///retry untill capture is successfull
       ///
-
     } while (isDirty && retryCounter >= 0);
 
     return image;
@@ -287,13 +284,12 @@ void decodeIsolate(DecodeParam param) {
   // decodeImage will identify the format of the image and use the appropriate
   // decoder.
   final imagee = imagePkg.Image.fromBytes(
-    param.width.floor(),
-    param.height.floor(),
-    param.file.buffer.asUint8List(),
-    format: imagePkg.Format.rgba,
+    width: param.width.floor(),
+    height: param.height.floor(),
+    bytes: param.file.buffer,
   );
   // Resize the image to a 120x? thumbnail (maintaining the aspect ratio).
-  Uint8List thumbnail = imagePkg.encodeJpg(imagee, quality: 100) as Uint8List;
+  Uint8List thumbnail = imagePkg.encodeJpg(imagee, quality: 100);
   param.sendPort.send(thumbnail);
 }
 
