@@ -55,15 +55,11 @@ class ScreenshotController {
           delay: Duration.zero,
           pixelRatio: pixelRatio,
         );
-        ByteData? byteData =
-<<<<<<< HEAD
-            await image?.toByteData(format: ui.ImageByteFormat.rawRgba);
-=======
-            await image?.toByteData(format: ui.ImageByteFormat.png);
+        ByteData? byteData = 
+        await image?.toByteData(format: ui.ImageByteFormat.rawRgba);
         image?.dispose();
 
         Uint8List? pngBytes = byteData?.buffer.asUint8List();
->>>>>>> ae826081dc7e026b19763f2a53fac9bce956e15c
 
         var receivePort = ReceivePort();
 
