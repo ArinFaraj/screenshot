@@ -9,10 +9,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-<<<<<<< HEAD
 import 'package:image/image.dart' as imagePkg;
-=======
->>>>>>> ae826081dc7e026b19763f2a53fac9bce956e15c
 
 import 'src/platform_specific/file_manager/file_manager.dart';
 
@@ -55,11 +52,11 @@ class ScreenshotController {
           delay: Duration.zero,
           pixelRatio: pixelRatio,
         );
-        ByteData? byteData = 
-        await image?.toByteData(format: ui.ImageByteFormat.rawRgba);
+        ByteData? byteData =
+            await image?.toByteData(format: ui.ImageByteFormat.rawRgba);
         image?.dispose();
 
-        Uint8List? pngBytes = byteData?.buffer.asUint8List();
+        // Uint8List? pngBytes = byteData?.buffer.asUint8List();
 
         var receivePort = ReceivePort();
 
@@ -124,12 +121,8 @@ class ScreenshotController {
         targetSize: targetSize);
     // converts to jpg format
     final ByteData? byteData =
-<<<<<<< HEAD
         await image.toByteData(format: ui.ImageByteFormat.rawRgba);
-=======
-        await image.toByteData(format: ui.ImageByteFormat.png);
     image.dispose();
->>>>>>> ae826081dc7e026b19763f2a53fac9bce956e15c
 
     var receivePort = ReceivePort();
 
@@ -143,10 +136,7 @@ class ScreenshotController {
     return imagwe;
   }
 
-<<<<<<< HEAD
-=======
   /// If you are building a desktop/web application that supports multiple view. Consider passing the [context] so that flutter know which view to capture.
->>>>>>> ae826081dc7e026b19763f2a53fac9bce956e15c
   static Future<ui.Image> widgetToUiImage(
     Widget widget, {
     Duration delay = const Duration(seconds: 1),
@@ -179,12 +169,6 @@ class ScreenshotController {
     }
 
     final RenderRepaintBoundary repaintBoundary = RenderRepaintBoundary();
-<<<<<<< HEAD
-
-    Size logicalSize = targetSize ??
-        ui.window.physicalSize / ui.window.devicePixelRatio; // Adapted
-    Size imageSize = targetSize ?? ui.window.physicalSize; // Adapted
-=======
     final platformDispatcher = WidgetsBinding.instance.platformDispatcher;
     final fallBackView = platformDispatcher.views.first;
     final view =
@@ -192,7 +176,6 @@ class ScreenshotController {
     Size logicalSize =
         targetSize ?? view.physicalSize / view.devicePixelRatio; // Adapted
     Size imageSize = targetSize ?? view.physicalSize; // Adapted
->>>>>>> ae826081dc7e026b19763f2a53fac9bce956e15c
 
     assert(logicalSize.aspectRatio.toStringAsPrecision(5) ==
         imageSize.aspectRatio
@@ -293,43 +276,6 @@ class ScreenshotController {
       buildOwner.finalizeTree();
     } catch (e) {}
 
-<<<<<<< HEAD
-    return image;
-  }
-}
-
-class DecodeParam {
-  final ByteData file;
-  final int width;
-  final int height;
-  final SendPort sendPort;
-
-  DecodeParam(
-    this.file,
-    this.width,
-    this.height,
-    this.sendPort,
-  );
-}
-
-void decodeIsolate(DecodeParam param) {
-  // Read an image from file (webp in this case).
-  // decodeImage will identify the format of the image and use the appropriate
-  // decoder.
-  final imagee = imagePkg.Image.fromBytes(
-    width: param.width.floor(),
-    height: param.height.floor(),
-    bytes: param.file.buffer,
-    numChannels: 4,
-    order: imagePkg.ChannelOrder.rgba,
-  );
-  // Resize the image to a 120x? thumbnail (maintaining the aspect ratio).
-  Uint8List thumbnail = imagePkg.encodeJpg(imagee, quality: 100);
-  param.sendPort.send(thumbnail);
-}
-
-class Screenshot<T> extends StatefulWidget {
-=======
     return image; // Adapted to directly return the image and not the Uint8List
   }
 
@@ -339,7 +285,7 @@ class Screenshot<T> extends StatefulWidget {
   /// ## Notes on Usage:
   ///     1. Do not use any scrolling widgets like ListView,GridView. Convert those widgets to use Columns and Rows.
   ///     2. Do not Widgets like `Flexible`,`Expanded`, or `Spacer`. If you do Please consider passing constraints.
-  /// 
+  ///
   /// Params:
   ///
   /// [widget] : The Widget which needs to be captured.
@@ -417,8 +363,37 @@ class Screenshot<T> extends StatefulWidget {
   }
 }
 
+class DecodeParam {
+  final ByteData file;
+  final int width;
+  final int height;
+  final SendPort sendPort;
+
+  DecodeParam(
+    this.file,
+    this.width,
+    this.height,
+    this.sendPort,
+  );
+}
+
+void decodeIsolate(DecodeParam param) {
+  // Read an image from file (webp in this case).
+  // decodeImage will identify the format of the image and use the appropriate
+  // decoder.
+  final imagee = imagePkg.Image.fromBytes(
+    width: param.width.floor(),
+    height: param.height.floor(),
+    bytes: param.file.buffer,
+    numChannels: 4,
+    order: imagePkg.ChannelOrder.rgba,
+  );
+  // Resize the image to a 120x? thumbnail (maintaining the aspect ratio).
+  Uint8List thumbnail = imagePkg.encodeJpg(imagee, quality: 100);
+  param.sendPort.send(thumbnail);
+}
+
 class Screenshot extends StatefulWidget {
->>>>>>> ae826081dc7e026b19763f2a53fac9bce956e15c
   final Widget? child;
   final ScreenshotController controller;
 
